@@ -93,11 +93,6 @@ def priorP(S: np.array, beta:int):
 
 def graph_creation(I,mu1,mu2):
 
-""" 
-I = slice 
-mu1 = int -> range(0,1)
-mu2 = int -> range(0,1)
-"""
 beta = 100
 mu = np.array([mu1, mu2])
 
