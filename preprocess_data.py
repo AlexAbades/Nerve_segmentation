@@ -8,6 +8,7 @@ import cv2
 import maxflow
 
 import visualize_data
+import MRF
 
 
 def read_data(path: str) -> np.ndarray:
@@ -43,3 +44,5 @@ if __name__ == '__main__':
     
     print(mu1, mu2)
    
+
+    MRF.graph_creation(data[0], mu1, mu2)

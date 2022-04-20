@@ -1,6 +1,8 @@
+import numpy as np
+import maxflow
+from visualize_data import visualize
 
-
-#%% Markov ranodm Fields: Likelihood 
+import visualize_data
 
 def likelihood(D,S,*mus):
     """
@@ -49,7 +51,6 @@ def likelihood(D,S,*mus):
     
     return V1, Dif
 
-#%% Markov Ranodm Fields: Prior
 
 def priorP(S: np.array, beta:int):
     """
@@ -85,44 +86,35 @@ def priorP(S: np.array, beta:int):
     return V2
 
 
+def graph_creation(img, mu1, mu2):
+    beta = 100
+    mu = np.array([mu1, mu2])
 
 
+    # Create the graph.
+    g = maxflow.Graph[float]()
 
-#%% GRAPH CUT 
-# Variables:
+    # Add the nodes. nodeids has the identifiers of the nodes in the grid. Note that nodeids.shape == img.shape
+    nodeids = g.add_grid_nodes(img.shape)
+    beta = 0.1
+    g.add_grid_edges(nodeids, beta)
 
-def graph_creation(I,mu1,mu2):
+    # Add the terminal edges. The image pixels are the capacities of the edges from the source node. The inverted image pixels
+    # are the capacities of the edges to the sink node.
+    # Check if we have to give the negative of the image ~I
+    w_t = (img - mu1)**2 # node-t weight 
+    w_s = (img - mu2)**2 # node-s weight
+    g.add_grid_tedges(nodeids, w_t, w_s)
 
-""" 
-I = slice 
-mu1 = int -> range(0,1)
-mu2 = int -> range(0,1)
-"""
-beta = 100
-mu = np.array([mu1, mu2])
+    # Find the maximum flow.
+    g.maxflow()
 
+    # Get the segments of the nodes in the grid.
+    # sgm.shape == nodeids.shape
+    sgm = g.get_grid_segments(nodeids)
 
-# Create the graph.
-g = maxflow.Graph[float]()
+    # The labels should be 1 where sgm is False and 0 otherwise.
+    img2 = np.logical_not(sgm).astype(int)
 
-# Add the nodes. nodeids has the identifiers of the nodes in the grid. Note that nodeids.shape == img.shape
-nodeids = g.add_grid_nodes(I.shape)
-beta = 0.1
-g.add_grid_edges(nodeids, beta)
-
-# Add the terminal edges. The image pixels are the capacities of the edges from the source node. The inverted image pixels
-# are the capacities of the edges to the sink node.
-# Check if we have to give the negative of the image ~I
-w_t = (I - mu1)**2 # s-node weight 
-w_s = (I - mu2)**2 # node-t weight
-g.add_grid_tedges(nodeids, w_t, w_s)
-
-# Find the maximum flow.
-g.maxflow()
-
-# Get the segments of the nodes in the grid.
-# sgm.shape == nodeids.shape
-sgm = g.get_grid_segments(nodeids)
-
-# The labels should be 1 where sgm is False and 0 otherwise.
-I2 = np.int_(np.logical_not(sgm))
+    visualize_data.visualize(img2)
+    
