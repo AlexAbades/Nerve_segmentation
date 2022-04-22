@@ -35,6 +35,7 @@ def read_data(path: str) -> np.ndarray:
     
 
 if __name__ == '__main__':
+    
     data = read_data("data")
 
     # visualize_data.visualize(data[0], title="First slice of the image")
@@ -44,5 +45,6 @@ if __name__ == '__main__':
     
     print(mu1, mu2)
    
+    #MRF.graph_creation(data[0], mu1, mu2)
 
-    MRF.graph_creation(data[0], mu1, mu2)
+    MRF.graph_allvolum(data,mu1,mu2)

@@ -116,5 +116,17 @@ def graph_creation(img, mu1, mu2):
     # The labels should be 1 where sgm is False and 0 otherwise.
     img2 = np.logical_not(sgm).astype(int)
 
-    visualize_data.visualize(img2)
+    #visualize_data.visualize(img2)
+    return img2
+
+
+def graph_allvolum(data,mu1,mu2):
+    all_volume=[]
+    for img in data:
+          img_g=graph_creation(img, mu1, mu2 )
+          all_volume.append(img_g)
+
+    visualize_data.visualize(all_volume[0])
+    return all_volume
     
+
