@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 import seaborn as sns
+from PIL import Image
 
 from typing import Tuple, Union
 
@@ -9,7 +10,7 @@ from typing import Tuple, Union
 sns.set_theme(palette=sns.color_palette("husl"))
 
 
-def visualize(img: np.ndarray, size: int = 8, title: str = "") -> None:
+def visualize(img: np.ndarray, size: int = 8, title: str = "", save_path: Union[None, str] = None, display: bool = True) -> None:
     """
     Visualize a single slice.
 
@@ -17,29 +18,38 @@ def visualize(img: np.ndarray, size: int = 8, title: str = "") -> None:
     ---------
     img: np.ndarray
         Slice to display
-
     size: int = 8
         Size of the slice
-
     title: str = ""
         Optional title for the slice
+    save_path: Union[None, str] = None
+        Path to save the image to. If it is None, it will not save it
+    display: bool = True
+        Show or not the plot
 
     Returns
     -------
     None
 
     """
-    plt.figure(figsize=(size, size))
+    plt.figure(figsize=(size, size), frameon=False)
     plt.imshow(img, cmap="gray")
     plt.xticks([])
     plt.yticks([])
     plt.grid(False)
     plt.title(title)
-    plt.show()
+    
+    if save_path != None:
+        plt.savefig(save_path)
+
+    if display:
+        plt.show()
+    else:
+        plt.close()
 
 
 def visualize_multiple(
-    img_arr: np.ndarray, size: int = 8, title: str = "", columns: int = 4
+    img_arr: np.ndarray, size: int = 8, title: str = "", columns: int = 4, save_path: Union[None, str] = None, display: bool = True
 ) -> None:
     """
     Display multiple slices, expanding to multiple rows if needed.
@@ -48,12 +58,14 @@ def visualize_multiple(
     ---------
     img_arr: np.ndarray
         Multiple slices to display
-
     size: int = 8
         Size of the slice
-
     title: str = ""
         Optional title for the collection of slices
+    save_path: Union[None, str] = None
+        Path to save the image to. If it is None, it will not save it
+    display: bool = True
+        Show or not the plot
 
     columns: int = 4
         Number of columns for the data
@@ -64,7 +76,7 @@ def visualize_multiple(
     num_rows = int(np.ceil(len(img_arr) / num_columns))
 
     fig, ax_arr = plt.subplots(
-        num_rows, num_columns, figsize=(size * num_rows, size * num_columns)
+        num_rows, num_columns, figsize=(size * num_rows, size * num_columns), frameon=False
     )
 
     fig.suptitle(title)
@@ -82,7 +94,13 @@ def visualize_multiple(
     for ax, img in zip(ax_arr.flatten(), img_arr):
         ax.imshow(img, cmap="gray")
 
-    plt.show()
+    if save_path != None:
+        plt.savefig(save_path)
+
+    if display:
+        plt.show()
+    else:
+        plt.close()
 
 
 def visualize_histogram(
@@ -94,7 +112,7 @@ def visualize_histogram(
     edge_color: Union[str, Tuple[int, int, int]] = "white",
     th: float = 0.5,
     save_path: Union[None, str] = None,
-    display: bool = True
+    display: bool = True,
 ) -> Tuple[int, int]:
     """
     Visualize the histogram, with the input image along side
@@ -134,12 +152,16 @@ def visualize_histogram(
     data_th = np.zeros(np.shape(data))
     data_th[data > th] = 1
 
-    mu1 = np.mean(data[data_th == 0])
-    mu2 = np.mean(data[data_th == 1])
+    bin_space = np.arange(0, 1, 1 / bins)
+    hist, bin_edges = np.histogram(data, bins=bin_space)
+    center_bins = np.array(
+        [(bin_edges[i] + bin_edges[i + 1]) / 2 for i in range(len(bin_edges) - 1)]
+    )
 
-    edges = np.linspace(0, 1, bins)
+    mu1 = center_bins[hist[center_bins <= th].argmax()]
+    mu2 = center_bins[hist[center_bins > th].argmax() + len(hist[center_bins <= th])]
 
-    fig = plt.figure(figsize=(size, size))
+    fig = plt.figure(figsize=(size, size), frameon=False)
 
     fig.suptitle(title)
 
@@ -165,7 +187,7 @@ def visualize_histogram(
 
     # Histogram of the original image
     ax2 = fig.add_subplot(gs[1, :])
-    ax2.hist(data.ravel(), edges, color=color, edgecolor=edge_color)
+    ax2.bar(center_bins, hist, width=bin_space[1], color=color, edgecolor=edge_color)
     ax2.set_xlabel("Pixel values")
     ax2.set_ylabel("Count")
     ax2.set_title("Intensity histogram")
@@ -204,13 +226,14 @@ def display_img_snake(
         Size of the slice
     title: str = ""
         Optional title for the slice
+    
 
     Returns
     -------
     None
     """
 
-    plt.figure(figsize=(size, size))
+    plt.figure(figsize=(size, size), frameon=False)
     plt.imshow(img, cmap="gray")
     snake = np.vstack([snake, snake[0]])
     plt.plot(snake[:, 1], snake[:, 0])
@@ -220,8 +243,9 @@ def display_img_snake(
     plt.title(title)
     plt.show()
 
+
 def display_img_multiple_snake(
-    img: np.ndarray, snakes: list, size: int = 8, title: str = ""
+    img: np.ndarray, snakes: list, size: int = 8, title: str = "", save_path: Union[None, str] = None, display: bool = True
 ):
     """
     Displays both the image and a single snake.
@@ -236,13 +260,17 @@ def display_img_multiple_snake(
         Size of the slice
     title: str = ""
         Optional title for the slice
+    save_path: Union[None, str] = None
+        Where to save the image
+    display: bool = True
+        Show or not the plot
 
     Returns
     -------
     None
     """
 
-    plt.figure(figsize=(size, size))
+    plt.figure(figsize=(size, size), frameon=False)
     plt.imshow(img, cmap="gray")
     for snake in snakes:
         snake = np.vstack([snake, snake[0]])
@@ -251,4 +279,46 @@ def display_img_multiple_snake(
     plt.yticks([])
     plt.grid(False)
     plt.title(title)
-    plt.show()
+
+    if save_path != None:
+        plt.savefig(save_path)
+
+    if display:
+        plt.show()
+    else:
+        plt.close()
+    
+def save_volume(snakes, data):
+    d,r,c = data.shape
+    white_image = np.zeros((r,c,d))
+    
+    #snake(10,5,99,2)-> (slices, circles, points, dimensions_points)
+    for s in range(snakes.shape[0]): #slide
+        for c in range(snakes.shape[1]):
+            # print(np.round(snakes[s,c,:,0]).astype(int))
+            # print(snakes[s,c,:,1])
+
+            white_image[np.round(snakes[s,c,:,0]).astype(int), np.round(snakes[s,c,:,1]).astype(int), s] = 1
+            print(white_image[s].shape) 
+    print(white_image.shape)
+
+    np.save("test", white_image)
+    
+    # from voxelfuse.voxel_model import VoxelModel
+    # from voxelfuse.mesh import Mesh
+    # from voxelfuse.primitives import generateMaterials
+    # model = VoxelModel(white_image, generateMaterials(4))  #4 is aluminium.
+    # mesh = Mesh.fromVoxelModel(model)
+    # mesh.export('mesh.stl')
+
+    # # vol_data = Image.fromarray((white_image * 255).astype(np.uint8))
+    # # vol_data.save('test_volume.tif')
+    # # return white_image
+    # plt.imshow(white_image[0])
+    # plt.show()
+
+    
+
+    
+    
+
