@@ -4,6 +4,7 @@ import visualize_data
 import MRF
 import deformable_models
 from PIL import Image
+import seaborn as sns
 
 
 
@@ -53,19 +54,32 @@ if __name__ == "__main__":
     # Visualize segmentation of first image
     # visualize_data.visualize(data_result[0])
 
-    circles_center = [(150, 39), (132, 106), (117, 282), (216, 168), (258, 131)]
-    circles_r = [16, 12, 12, 17, 18]
+    circles_center = [(150, 39), (132, 106), (117, 282), (216, 168), (258, 131), (160, 135), (209, 214), (281, 230)]
+    circles_r = [16, 12, 12, 17, 18, 10, 10, 10]
+    max_distances = [10, 18, 15, 10, 10, 10, 10, 10]
+
+    colors = sns.color_palette("hls", len(circles_center))
+
+    bigger_circles_r = [x + d for x, d in zip(circles_r, max_distances)]
+
 
     # Volumetric segmentation of few nerves using Deformable models
     initial_snakes = deformable_models.create_multiple_circles(circles_center, circles_r, 100)
 
+    bigger_initial_snakes = deformable_models.create_multiple_circles(circles_center, bigger_circles_r, 100)
 
-    all_snakes = deformable_models.extrapolate_volum(data_result, initial_snakes)
 
-    print(all_snakes.shape)
 
-    visualize_data.save_volume(all_snakes, data)
+    all_snakes, all_snakes_big = deformable_models.extrapolate_volum(data_result, initial_snakes, bigger_initial_snakes, max_distance=max_distances)
 
+    for i in range(len(data_result)):
+        snakes = np.array(list(all_snakes[i]) + list(all_snakes_big[i]))
+        visualize_data.display_img_multiple_snake(data[i], snakes, colors=colors, display=False, save_path=f"outputs/nerves/sample_{i}")
+
+
+    # visualize_data.save_volume(all_snakes, data)
+
+    
 
     # data_post = np.array(data_post)
     # vol_data = Image.fromarray(data_post)

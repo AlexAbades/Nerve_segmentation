@@ -2,7 +2,7 @@ import numpy as np
 from typing import Tuple
 from skimage.draw import polygon2mask
 import scipy.interpolate
-from visualize_data import visualize
+import visualize_data
 
 
 def create_circle(center: Tuple[float, float], r: float, n: int) -> np.ndarray:
@@ -170,9 +170,9 @@ def calculate_intensities(img, snake, offside_out, offside_in):
     return intensity_out, intensity_in
 
 
-def deformable(img, snake, tau=2, alpha=0.2, beta=0.2, offside_out=1):
+def deformable(img, snake, tau=2, alpha=0.2, beta=0.2, offside_out=1, offside_in=None):
 
-    mean_outside, mean_inside = snake_mask(img, snake, offside_out)
+    mean_outside, mean_inside = snake_mask(img, snake, offside_out, offside_in)
 
     F_ext = []
     for point in snake:
@@ -203,7 +203,7 @@ def deformable(img, snake, tau=2, alpha=0.2, beta=0.2, offside_out=1):
     return snake
 
 
-def snake_mask(img, snake, offside_out):
+def snake_mask(img, snake, offside_out, offside_in = None):
 
     snake_out = snake + get_snake_normals(snake) * offside_out
 
@@ -211,20 +211,59 @@ def snake_mask(img, snake, offside_out):
     mask_out = polygon2mask(img.shape, snake_out)
     mask_out = mask_out & ~mask
 
-    intensity_in = np.mean(img[mask])
+    if offside_in != None:
+        snake_in = snake + get_snake_normals(snake) * offside_in
+        mask_in = polygon2mask(img.shape, snake_in)
+        mask_in = mask & ~mask_in
+        intensity_in = np.mean(img[mask_in])
+    else:
+        intensity_in = np.mean(img[mask])
 
     intensity_out = np.mean(img[mask_out])
 
     return intensity_out, intensity_in
 
+def get_closest_point(point, reference_snake):
+    closest_point = None
+    closest_dist = np.inf
+
+    for ref_point in reference_snake:
+        dist = np.linalg.norm(point-ref_point)
+        if dist < closest_dist:
+            closest_dist = dist
+            closest_point = ref_point
+    
+    return closest_point, closest_dist
+
+def constraint_distance_snake(snake, reference_snake, min_distance, max_distance):
+    
+    for i, point in enumerate(snake):
+        closest_point, closest_dist = get_closest_point(point, reference_snake)
+
+        vector = point - closest_point
+
+        if closest_dist < min_distance:
+            snake[i] = reference_snake[i] + vector * (min_distance / closest_dist)
+        
+        if closest_dist > max_distance:
+            snake[i] = reference_snake[i] + vector * (max_distance / closest_dist)
+
+    snake = distribute_points(snake.T)
+    snake = remove_intersections(snake).T
+
+    return snake
 
 def extrapolate_volum(
     data_result: np.ndarray,
     snakes: np.ndarray,
+    bigger_snakes: np.ndarray,
+    max_distance: list,
     iter_first: int = 30,
     iter_rest: int = 4,
     offside_out: float = 5,
+    offside_in: float = -10,
     tau: float = 1,
+    min_distance: float = 3,
 ) -> np.ndarray:
     """
     Given a group of images already segmented, we iterate through each image and apply deformable function (chan-vase) to each
@@ -237,6 +276,8 @@ def extrapolate_volum(
         Data containg the segmented imges. (n, r, c) n: number of images. r & c: number of rows and columns of image
     snakes: np.ndarray
         Initial position of multiple snakes. (s, x, y) s: number of snakes. x, y: position of each snake
+    bigger_snakes: np.ndarray
+        Outside snakes
     iter_first: int = 30
         Number of iterations of Chan-Vase on the first image. (First fit of snakes). Default 30
     iter_rest: int = 4
@@ -256,18 +297,33 @@ def extrapolate_volum(
     for i in range(iter_first):
         for j in range(len(snakes)):
             snakes[j] = deformable(
-                data_result[0], snakes[j], offside_out=5, tau=tau
+                data_result[0], snakes[j], offside_out=offside_out, tau=tau
             )
 
+            bigger_snakes[j] = deformable(
+                data_result[0], bigger_snakes[j], offside_out=offside_out, tau=tau, offside_in=offside_in
+            )
+            bigger_snakes[j] = constraint_distance_snake(bigger_snakes[j], snakes[j], min_distance, max_distance[j])
+
+
     all_snakes = [snakes]
+    all_snakes_big = [bigger_snakes]
 
     for i in range(1, len(data_result)):
         snakes_tmp = all_snakes[-1].copy()
+        snakes_big_tmp = all_snakes_big[-1].copy()
 
         for j in range(iter_rest):
             for k in range(len(snakes_tmp)):
                 snakes_tmp[k] = deformable(data_result[i], snakes_tmp[k], offside_out=offside_out, tau=tau)
+
+                snakes_big_tmp[k] = deformable(
+                data_result[i], snakes_big_tmp[k], offside_out=offside_out, tau=tau, offside_in=offside_in
+                )
+                snakes_big_tmp[k] = constraint_distance_snake(snakes_big_tmp[k], snakes_tmp[k], min_distance, max_distance[k])
+
         
         all_snakes.append(snakes_tmp)
+        all_snakes_big.append(snakes_big_tmp)
 
-    return np.array(all_snakes)
+    return np.array(all_snakes), np.array(all_snakes_big)

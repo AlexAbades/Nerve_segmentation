@@ -2,9 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 import seaborn as sns
-from PIL import Image
 
 from typing import Tuple, Union
+
+from voxelfuse.voxel_model import VoxelModel
+from voxelfuse.mesh import Mesh
+from voxelfuse.primitives import generateMaterials
 
 
 sns.set_theme(palette=sns.color_palette("husl"))
@@ -245,7 +248,7 @@ def display_img_snake(
 
 
 def display_img_multiple_snake(
-    img: np.ndarray, snakes: list, size: int = 8, title: str = "", save_path: Union[None, str] = None, display: bool = True
+    img: np.ndarray, snakes: list, size: int = 8, title: str = "", save_path: Union[None, str] = None, display: bool = True, colors: Union[None, list] = None
 ):
     """
     Displays both the image and a single snake.
@@ -272,9 +275,16 @@ def display_img_multiple_snake(
 
     plt.figure(figsize=(size, size), frameon=False)
     plt.imshow(img, cmap="gray")
-    for snake in snakes:
+    for i, snake in enumerate(snakes):
         snake = np.vstack([snake, snake[0]])
-        plt.plot(snake[:, 1], snake[:, 0])
+
+        if colors != None:
+            color = colors[i % len(colors)]
+            plt.plot(snake[:, 1], snake[:, 0], color=color)
+        else:
+            plt.plot(snake[:, 1], snake[:, 0])
+
+
     plt.xticks([])
     plt.yticks([])
     plt.grid(False)
@@ -289,36 +299,18 @@ def display_img_multiple_snake(
         plt.close()
     
 def save_volume(snakes, data):
-    d,r,c = data.shape
-    white_image = np.zeros((r,c,d))
+    white_image = np.ones(data.shape)
     
-    #snake(10,5,99,2)-> (slices, circles, points, dimensions_points)
-    for s in range(snakes.shape[0]): #slide
+    # snake(10,5,99,2)-> (slices, circles, points, dimensions_points)
+    for s in range(len(snakes)): #slide
         for c in range(snakes.shape[1]):
             # print(np.round(snakes[s,c,:,0]).astype(int))
             # print(snakes[s,c,:,1])
 
-            white_image[np.round(snakes[s,c,:,0]).astype(int), np.round(snakes[s,c,:,1]).astype(int), s] = 1
+            white_image[s, np.round(snakes[s,c,:,0]).astype(int), np.round(snakes[s,c,:,1]).astype(int)] = 1
             print(white_image[s].shape) 
     print(white_image.shape)
 
-    np.save("test", white_image)
-    
-    # from voxelfuse.voxel_model import VoxelModel
-    # from voxelfuse.mesh import Mesh
-    # from voxelfuse.primitives import generateMaterials
-    # model = VoxelModel(white_image, generateMaterials(4))  #4 is aluminium.
-    # mesh = Mesh.fromVoxelModel(model)
-    # mesh.export('mesh.stl')
-
-    # # vol_data = Image.fromarray((white_image * 255).astype(np.uint8))
-    # # vol_data.save('test_volume.tif')
-    # # return white_image
-    # plt.imshow(white_image[0])
-    # plt.show()
-
-    
-
-    
-    
-
+    model = VoxelModel(white_image, generateMaterials(4))  #4 is aluminium.
+    mesh = Mesh.fromVoxelModel(model)
+    mesh.export('mesh.stl')
