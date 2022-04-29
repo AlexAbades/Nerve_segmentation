@@ -5,7 +5,7 @@ import MRF
 import deformable_models
 from PIL import Image
 import seaborn as sns
-
+from tqdm import tqdm
 
 
 import matplotlib.pyplot as plt
@@ -42,21 +42,31 @@ if __name__ == "__main__":
     """
 
     
-    data = preprocess_data.read_data("data")[:10]
+    data = preprocess_data.read_data("data")
 
     # Visualize intensity histogram
     mu1, mu2 = visualize_data.visualize_histogram(
         data, save_path="outputs/plots/histogram", th=0.36, bins=50, display=False
     )
 
-    # Binary segmentation with MRF
-    data_result = MRF.graph_3d_segmetation(data, mu1, mu2, 0.001)
-    # Visualize segmentation of first image
-    # visualize_data.visualize(data_result[0])
+    # Save images
+    # for i, img in enumerate(tqdm(data)):  
+    #     visualize_data.visualize(img, save_path=f"outputs/original/sample_{i}", display=False)  
 
-    circles_center = [(150, 39), (132, 106), (117, 282), (216, 168), (258, 131), (160, 135), (209, 214), (281, 230)]
-    circles_r = [16, 12, 12, 17, 18, 10, 10, 10]
-    max_distances = [10, 18, 15, 10, 10, 10, 10, 10]
+    data_shape = data.shape
+
+    # Binary segmentation with MRF
+    data_result = np.empty((0, data_shape[1], data_shape[2]))
+    for i in range(0, len(data), 100):
+        data_result = np.append(data_result, MRF.graph_3d_segmetation(data[i:i+100], mu1, mu2, 0.001), axis=0)
+    
+    # Save data result 
+    # for i, img in enumerate(tqdm(data_result)):  
+    #     visualize_data.visualize(img, save_path=f"outputs/segmentation/sample_{i}", display=False)  
+
+    circles_center = [(150, 39), (117, 282), (216, 168), (258, 131), (209, 214), (281, 230), (47, 70)]
+    circles_r = [16, 12, 17, 18, 10, 10, 8]
+    max_distances = [10, 15, 10, 10, 10, 10, 10]
 
     colors = sns.color_palette("hls", len(circles_center))
 
@@ -70,9 +80,9 @@ if __name__ == "__main__":
 
 
 
-    all_snakes, all_snakes_big = deformable_models.extrapolate_volum(data_result, initial_snakes, bigger_initial_snakes, max_distance=max_distances)
+    all_snakes, all_snakes_big = deformable_models.extrapolate_volum(data_result[:500], initial_snakes, bigger_initial_snakes, max_distance=max_distances)
 
-    for i in range(len(data_result)):
+    for i in tqdm(range(len(data_result))):
         snakes = np.array(list(all_snakes[i]) + list(all_snakes_big[i]))
         visualize_data.display_img_multiple_snake(data[i], snakes, colors=colors, display=False, save_path=f"outputs/nerves/sample_{i}")
 

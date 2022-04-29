@@ -5,9 +5,9 @@ import seaborn as sns
 
 from typing import Tuple, Union
 
-from voxelfuse.voxel_model import VoxelModel
-from voxelfuse.mesh import Mesh
-from voxelfuse.primitives import generateMaterials
+# from voxelfuse.voxel_model import VoxelModel
+# from voxelfuse.mesh import Mesh
+# from voxelfuse.primitives import generateMaterials
 
 
 sns.set_theme(palette=sns.color_palette("husl"))

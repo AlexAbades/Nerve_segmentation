@@ -2,7 +2,7 @@ import numpy as np
 from typing import Tuple
 from skimage.draw import polygon2mask
 import scipy.interpolate
-import visualize_data
+from tqdm import tqdm
 
 
 def create_circle(center: Tuple[float, float], r: float, n: int) -> np.ndarray:
@@ -215,16 +215,22 @@ def snake_mask(img, snake, offside_out, offside_in = None):
         snake_in = snake + get_snake_normals(snake) * offside_in
         mask_in = polygon2mask(img.shape, snake_in)
         mask_in = mask & ~mask_in
-        intensity_in = np.mean(img[mask_in])
+        if len(img[mask_in]) > 0:
+            intensity_in = np.mean(img[mask_in])
+        else:
+            intensity_in = 0
     else:
         intensity_in = np.mean(img[mask])
 
-    intensity_out = np.mean(img[mask_out])
+    if len(img[mask_out]) > 0:
+        intensity_out = np.mean(img[mask_out])
+    else:
+        intensity_out = 0
 
     return intensity_out, intensity_in
 
 def get_closest_point(point, reference_snake):
-    closest_point = None
+    closest_point = np.array([])
     closest_dist = np.inf
 
     for ref_point in reference_snake:
@@ -240,13 +246,14 @@ def constraint_distance_snake(snake, reference_snake, min_distance, max_distance
     for i, point in enumerate(snake):
         closest_point, closest_dist = get_closest_point(point, reference_snake)
 
-        vector = point - closest_point
+        if len(closest_point) > 0:
+            vector = point - closest_point
 
-        if closest_dist < min_distance:
-            snake[i] = reference_snake[i] + vector * (min_distance / closest_dist)
-        
-        if closest_dist > max_distance:
-            snake[i] = reference_snake[i] + vector * (max_distance / closest_dist)
+            if closest_dist < min_distance:
+                snake[i] = reference_snake[i] + vector * (min_distance / closest_dist)
+            
+            if closest_dist > max_distance:
+                snake[i] = reference_snake[i] + vector * (max_distance / closest_dist)
 
     snake = distribute_points(snake.T)
     snake = remove_intersections(snake).T
@@ -309,7 +316,7 @@ def extrapolate_volum(
     all_snakes = [snakes]
     all_snakes_big = [bigger_snakes]
 
-    for i in range(1, len(data_result)):
+    for i in tqdm(range(1, len(data_result))):
         snakes_tmp = all_snakes[-1].copy()
         snakes_big_tmp = all_snakes_big[-1].copy()
 
