@@ -39,7 +39,7 @@ def compute_average_radius_area (snakes):
         radi_all_slices[s,:]=np.array(radi_circles)
 
     mean_radius=  np.mean(radi_all_slices,axis=0) 
-    mean_area= 2*np.pi*mean_radius
+    mean_area= np.pi*(mean_radius**2)
 
     return mean_radius,mean_area
 
@@ -80,9 +80,12 @@ def compute_average_in_out_radius_area (snakes_in,snakes_out):
 
 
 def nerve_density_count():
+    """
+    Manual (tenemos que contar el numero de nervios que tenemos en una foto)ç
+    Se puede hacer con analayis blob pero es más complicado 
+    """
+
     pass
 
-def myelin_density():
-    pass
 
 

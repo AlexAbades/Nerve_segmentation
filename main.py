@@ -3,9 +3,12 @@ import preprocess_data
 import visualize_data
 import MRF
 import deformable_models
+import analyze_data
 from PIL import Image
 import seaborn as sns
 from tqdm import tqdm
+import tiffile
+
 
 import os
 import cv2
@@ -50,6 +53,7 @@ if __name__ == "__main__":
     mu1, mu2 = visualize_data.visualize_histogram(
         data, th=0.36, bins=50, display=True
     )
+    
 
     # Save images
     # for i, img in enumerate(tqdm(data)):  
@@ -62,6 +66,26 @@ if __name__ == "__main__":
     for i in range(0, len(data), 100):
         data_result = np.append(data_result, MRF.graph_3d_segmetation(data[i:i+100], mu1, mu2, 0.001), axis=0)
     
+    # Data results dimensions 
+    # 1024, 350 , 350 -> Range(0,1) 
+    
+    data_result_save = data_result*255
+    data_result_save = data_result_save.astype(np.uint8)
+
+
+    print(data_result_save.shape) 
+    
+    #tiffile.imwrite('segmentation_MRF0.tiff', data_result_save)
+
+
+
+    slice0=data_result[0]
+    print('Myelin density')
+    print((1-(np.sum(slice0)/(350*350)))*100)
+    #Myelin density from slice 0: 39.06285714285714
+    
+    
+
     # Save data result 
     # for i, img in enumerate(tqdm(data_result)):  
     #     visualize_data.visualize(img, save_path=f"outputs/segmentation/sample_{i}", display=False)  
@@ -80,19 +104,34 @@ if __name__ == "__main__":
 
     bigger_initial_snakes = deformable_models.create_multiple_circles(circles_center, bigger_circles_r, 100)
 
+    all_snakes, all_snakes_big = deformable_models.extrapolate_volum(data_result[:500], initial_snakes, bigger_initial_snakes, max_distance=max_distances)
+    
+    print(all_snakes.shape)
+    print(all_snakes.shape)
 
+    #Save volum:
+    nerve_segmentation=visualize_data.save_volume(all_snakes,all_snakes_big,data[:500])
 
-    all_snakes, all_snakes_big = deformable_models.extrapolate_volum(data_result, initial_snakes, bigger_initial_snakes, max_distance=max_distances)
+    # all_snakes, all_snakes_big = deformable_models.extrapolate_volum(data_result, initial_snakes, bigger_initial_snakes, max_distance=max_distances)
 
-    for i in tqdm(range(len(data_result))):
-        snakes = np.array(list(all_snakes[i]) + list(all_snakes_big[i]))
-        visualize_data.display_img_multiple_snake(data[i], snakes, colors=colors, display=False, save_path=f"outputs/nerves/sample_{i}")
+    #Extract Radius and Areas:
+    mean_radi_axon,mean_area_axon,mean_radi_nerve,mean_area_nerve,mean_radi_myelin_thickness,mean_area_myelin_thickness=analyze_data.compute_average_in_out_radius_area(all_snakes, all_snakes_big)
+
+    print(mean_radi_axon)
+    print(mean_area_axon)
+    print(mean_radi_nerve)
+    print(mean_area_nerve)
+    print(mean_radi_myelin_thickness)
+    print(mean_area_myelin_thickness)
 
 
     visualize_data.save_volume(all_snakes, data)
 
 
     # visualize_data.save_volume(all_snakes, data)
+    #for i in tqdm(range(len(data_result))):
+        #snakes = np.array(list(all_snakes[i]) + list(all_snakes_big[i]))
+        #visualize_data.display_img_multiple_snake(data[i], snakes, colors=colors, display=False, save_path=f"outputs/nerves/sample_{i}")
 
     
 

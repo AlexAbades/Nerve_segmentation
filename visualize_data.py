@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 import seaborn as sns
+from skimage.draw import polygon2mask
+import tiffile
 
 from typing import Tuple, Union
 
@@ -298,19 +300,50 @@ def display_img_multiple_snake(
     else:
         plt.close()
     
-def save_volume(snakes, data):
-    white_image = np.ones(data.shape)
+
     
+def save_volume(snakes_in, snakes_out, data)->None:
+    """
+    Given the interior and the exterior snakes, it creates a mask of Trues in between the snakes and it asigns a color to each snake. 
+
+    ARGUMENTS
+    ---------
+    snakes_in:
+    snakes_out: 
+    data:
+
+    RETURNS
+    ---------
+    None 
+    """
+    # Numpy vector to store the circles
+    white_image = np.zeros(data.shape)
+
+    # Color map to have different nerves in different colors 
+    colors = np.round(np.linspace(150,255,7)).astype(np.uint8)
+    
+
+    # Get dimensions of the image 
+    d, row, col = data.shape
+
     # snake(10,5,99,2)-> (slices, circles, points, dimensions_points)
-    for s in range(len(snakes)): #slide
-        for c in range(snakes.shape[1]):
-            # print(np.round(snakes[s,c,:,0]).astype(int))
-            # print(snakes[s,c,:,1])
+    for s in range(d): # Iterate through each slide 
+        for c in range(snakes_in.shape[1]): # Iterate through each circle
+            mask_in = polygon2mask((row,col), snakes_in[s,c,:,:])
+            mask_out = polygon2mask((row,col), snakes_out[s,c,:,:])
+            mask = mask_out & ~mask_in
+            idx = np.where(mask)
+            white_image[s, idx[0], idx[1]] = colors[c]
 
-            white_image[s, np.round(snakes[s,c,:,0]).astype(int), np.round(snakes[s,c,:,1]).astype(int)] = 1
-            print(white_image[s].shape) 
-    print(white_image.shape)
+    # Transform to uint 8
+    white_image = white_image.astype(np.uint8)
+    # Save
+    tiffile.imwrite('snakes_segmentation.tiff', white_image)
+    
 
-    model = VoxelModel(white_image, generateMaterials(4))  #4 is aluminium.
-    mesh = Mesh.fromVoxelModel(model)
-    mesh.export('mesh.stl')
+
+    
+
+    #model = VoxelModel(white_image, generateMaterials(4))  #4 is aluminium.
+    #mesh = Mesh.fromVoxelModel(model)
+    #mesh.export('mesh.stl')
