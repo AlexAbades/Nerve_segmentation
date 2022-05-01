@@ -6,6 +6,8 @@ import deformable_models
 from PIL import Image
 import seaborn as sns
 from tqdm import tqdm
+import tiffile
+
 
 
 import matplotlib.pyplot as plt
@@ -48,6 +50,7 @@ if __name__ == "__main__":
     mu1, mu2 = visualize_data.visualize_histogram(
         data, save_path="outputs/plots/histogram", th=0.36, bins=50, display=False
     )
+    
 
     # Save images
     # for i, img in enumerate(tqdm(data)):  
@@ -60,6 +63,26 @@ if __name__ == "__main__":
     for i in range(0, len(data), 100):
         data_result = np.append(data_result, MRF.graph_3d_segmetation(data[i:i+100], mu1, mu2, 0.001), axis=0)
     
+    # Data results dimensions 
+    # 1024, 350 , 350 -> Range(0,1) 
+    
+    data_result_save = data_result*255
+    data_result_save = data_result_save.astype(np.uint8)
+
+
+    print(data_result_save.shape) 
+    
+    #tiffile.imwrite('segmentation_MRF0.tiff', data_result_save)
+
+
+
+    slice0=data_result[0]
+    print('Myelin density')
+    print((1-(np.sum(slice0)/(350*350)))*100)
+    #Myelin density from slice 0: 39.06285714285714
+    
+    
+
     # Save data result 
     # for i, img in enumerate(tqdm(data_result)):  
     #     visualize_data.visualize(img, save_path=f"outputs/segmentation/sample_{i}", display=False)  
@@ -78,16 +101,20 @@ if __name__ == "__main__":
 
     bigger_initial_snakes = deformable_models.create_multiple_circles(circles_center, bigger_circles_r, 100)
 
+    all_snakes, all_snakes_big = deformable_models.extrapolate_volum(data_result[:10], initial_snakes, bigger_initial_snakes, max_distance=max_distances)
+    
+    print(all_snakes.shape)
+    print(all_snakes.shape)
 
+    #Save volum:
+    nerve_segmentation=visualize_data.save_volume(all_snakes,all_snakes_big,data)
+    #tiffile.imwrite('segmentation_MRF0.tiff', nerve_segmentation)
 
-    all_snakes, all_snakes_big = deformable_models.extrapolate_volum(data_result[:500], initial_snakes, bigger_initial_snakes, max_distance=max_distances)
+    
 
-    for i in tqdm(range(len(data_result))):
-        snakes = np.array(list(all_snakes[i]) + list(all_snakes_big[i]))
-        visualize_data.display_img_multiple_snake(data[i], snakes, colors=colors, display=False, save_path=f"outputs/nerves/sample_{i}")
-
-
-    # visualize_data.save_volume(all_snakes, data)
+    #for i in tqdm(range(len(data_result))):
+        #snakes = np.array(list(all_snakes[i]) + list(all_snakes_big[i]))
+        #visualize_data.display_img_multiple_snake(data[i], snakes, colors=colors, display=False, save_path=f"outputs/nerves/sample_{i}")
 
     
 
