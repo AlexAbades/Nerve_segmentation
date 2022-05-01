@@ -3,6 +3,7 @@ import preprocess_data
 import visualize_data
 import MRF
 import deformable_models
+import analyze_data
 from PIL import Image
 import seaborn as sns
 from tqdm import tqdm
@@ -101,16 +102,24 @@ if __name__ == "__main__":
 
     bigger_initial_snakes = deformable_models.create_multiple_circles(circles_center, bigger_circles_r, 100)
 
-    all_snakes, all_snakes_big = deformable_models.extrapolate_volum(data_result[:10], initial_snakes, bigger_initial_snakes, max_distance=max_distances)
+    all_snakes, all_snakes_big = deformable_models.extrapolate_volum(data_result[:500], initial_snakes, bigger_initial_snakes, max_distance=max_distances)
     
     print(all_snakes.shape)
     print(all_snakes.shape)
 
     #Save volum:
-    nerve_segmentation=visualize_data.save_volume(all_snakes,all_snakes_big,data)
-    #tiffile.imwrite('segmentation_MRF0.tiff', nerve_segmentation)
+    nerve_segmentation=visualize_data.save_volume(all_snakes,all_snakes_big,data[:500])
 
-    
+    #Extract Radius and Areas:
+    mean_radi_axon,mean_area_axon,mean_radi_nerve,mean_area_nerve,mean_radi_myelin_thickness,mean_area_myelin_thickness=analyze_data.compute_average_in_out_radius_area(all_snakes, all_snakes_big)
+
+    print(mean_radi_axon)
+    print(mean_area_axon)
+    print(mean_radi_nerve)
+    print(mean_area_nerve)
+    print(mean_radi_myelin_thickness)
+    print(mean_area_myelin_thickness)
+
 
     #for i in tqdm(range(len(data_result))):
         #snakes = np.array(list(all_snakes[i]) + list(all_snakes_big[i]))

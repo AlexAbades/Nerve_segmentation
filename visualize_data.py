@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 import seaborn as sns
 from skimage.draw import polygon2mask
+import tiffile
 
 from typing import Tuple, Union
 
@@ -301,8 +302,9 @@ def display_img_multiple_snake(
     
 
     
-def save_volume(snakes_in, snakes_out, data):
+def save_volume(snakes_in, snakes_out, data)->None:
     """
+    Given the interior and the exterior snakes, it creates a mask of Trues in between the snakes and it asigns a color to each snake. 
 
     ARGUMENTS
     ---------
@@ -312,46 +314,33 @@ def save_volume(snakes_in, snakes_out, data):
 
     RETURNS
     ---------
+    None 
     """
     # Numpy vector to store the circles
-    white_image_interior = np.zeros(data.shape)
+    white_image = np.zeros(data.shape)
 
     # Color map to have different nerves in different colors 
-    colors = np.round(np.linspce(0,255,7)).astype(np.uint8)
-    # snake(10,5,99,2)-> (slices, circles, points, dimensions_points)
+    colors = np.round(np.linspace(150,255,7)).astype(np.uint8)
+    
 
     # Get dimensions of the image 
-    _, r, c = data.shape
+    d, row, col = data.shape
 
-    # mask = polygon2mask((r,c), snake)
-    # mask_out = polygon2mask((r,c), snake_out)
-    # mask_out = mask_out & ~mask
-    
-    for s in range(len(snakes_in)): # Iterate through each slide 
+    # snake(10,5,99,2)-> (slices, circles, points, dimensions_points)
+    for s in range(d): # Iterate through each slide 
         for c in range(snakes_in.shape[1]): # Iterate through each circle
-            mask_in =  polygon2mask((r,c), snakes_in[s,c,:,:])
-            mask_out  =  polygon2mask((r,c), snakes_out[s,c,:,:])
+            mask_in =  polygon2mask((row,col), snakes_in[s,c,:,:])
+            mask_out  =  polygon2mask((row,col), snakes_out[s,c,:,:])
             mask = mask_out & ~mask_in
             idx = np.where(mask)
-            white_image_interior[s, idx[0], idx[1]] = colors[c]
+            white_image[s, idx[0], idx[1]] = colors[c]
 
+    # Transform to uint 8
+    white_image = white_image.astype(np.uint8)
+    # Save
+    tiffile.imwrite('snakes_segmentation.tiff', white_image)
     
 
-    # for s in range(len(snakes)): #slide
-    #     for c in range(snakes.shape[1]): # Circles
-
-    #         # print(np.round(snakes[s,c,:,0]).astype(int))
-    #         # print(snakes[s,c,:,1])
-
-    #         white_image[s, np.round(snakes[s,c,:,0]).astype(int), np.round(snakes[s,c,:,1]).astype(int)] = colors[s]
-           
-    
-    print(white_image_interior.shape)
-    
-    
-    
-
-    return white_image_interior
 
     
 

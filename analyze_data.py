@@ -87,28 +87,5 @@ def nerve_density_count():
 
     pass
 
-def myelin_density(data, ndc:int=18, mean_area_myelin_thickness: float)->float:
-    """
-    Use compute_average_radius_area function to calculate the medium area of myelin and then multiplies it 
-    with the number of Nerves that we have identyfied on the cross section of the nerve fiber.
-    
-    Arguments
-    ---------
-    ndc : int 
-    
-    Returns
-    -------
-    Md : float 
-    """
-
-    slides, rows, columns = data.shape
-
-    area_cross_section  = rows*columns
-
-    myelin_density = (ndc * mean_area_myelin_thickness)/
-
-    return Md
 
 
-def segmented_volumne(segmented_data)->np.array:
-    pass 
