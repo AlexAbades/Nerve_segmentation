@@ -7,6 +7,9 @@ from PIL import Image
 import seaborn as sns
 from tqdm import tqdm
 
+import os
+import cv2
+
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -41,12 +44,11 @@ if __name__ == "__main__":
     visualize_data.visualize(data_result[0], save_path="outputs/segmentation/sample_400", display=False)
     """
 
-    
-    data = preprocess_data.read_data("data")
+    data = preprocess_data.read_data("data")[:10]
 
     # Visualize intensity histogram
     mu1, mu2 = visualize_data.visualize_histogram(
-        data, save_path="outputs/plots/histogram", th=0.36, bins=50, display=False
+        data, th=0.36, bins=50, display=True
     )
 
     # Save images
@@ -68,7 +70,7 @@ if __name__ == "__main__":
     circles_r = [16, 12, 17, 18, 10, 10, 8]
     max_distances = [10, 15, 10, 10, 10, 10, 10]
 
-    colors = sns.color_palette("hls", len(circles_center))
+    colors = sns.color_palette("bright", len(circles_center))
 
     bigger_circles_r = [x + d for x, d in zip(circles_r, max_distances)]
 
@@ -80,11 +82,14 @@ if __name__ == "__main__":
 
 
 
-    all_snakes, all_snakes_big = deformable_models.extrapolate_volum(data_result[:500], initial_snakes, bigger_initial_snakes, max_distance=max_distances)
+    all_snakes, all_snakes_big = deformable_models.extrapolate_volum(data_result, initial_snakes, bigger_initial_snakes, max_distance=max_distances)
 
     for i in tqdm(range(len(data_result))):
         snakes = np.array(list(all_snakes[i]) + list(all_snakes_big[i]))
         visualize_data.display_img_multiple_snake(data[i], snakes, colors=colors, display=False, save_path=f"outputs/nerves/sample_{i}")
+
+
+    visualize_data.save_volume(all_snakes, data)
 
 
     # visualize_data.save_volume(all_snakes, data)
@@ -111,3 +116,27 @@ if __name__ == "__main__":
     #         visualize_data.display_img_multiple_snake(data[0], snakes)
 
     # print(deformable_models.get_snake_normals(snake))
+
+    """
+    img_path = "data/sample_100.png"
+    data = np.array(cv2.imreadmulti(img_path,  flags=cv2.IMREAD_GRAYSCALE)[1])
+    data = data.astype(float) / 255
+
+    mu1, mu2 = visualize_data.visualize_histogram(
+        data, th=0.45, bins=50, display=False
+    )
+
+    data_result = MRF.graph_3d_segmetation(data, mu1, mu2, 0.01)
+
+    snake_in = deformable_models.create_multiple_circles([(50, 50)], [18], 100)
+    snake_out = deformable_models.create_multiple_circles([(50, 50)], [45], 100)
+
+    snake_in, snake_out = deformable_models.extrapolate_volum(data_result, snake_in, snake_out, [20], iter_first=50)
+
+    visualize_data.plot_inside_ouside_masks(data[0], snake_in[0, 0], snake_out[0, 0])
+
+    # print(snake_in)
+
+    # visualize_data.display_img_snake(data_result[0], snake_in[0, 0])
+    # visualize_data.display_img_snake(data_result[0], snake_out[0, 0])
+    """

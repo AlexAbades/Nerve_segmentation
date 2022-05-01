@@ -213,6 +213,8 @@ def snake_mask(img, snake, offside_out, offside_in = None):
 
     if offside_in != None:
         snake_in = snake + get_snake_normals(snake) * offside_in
+        snake_in = distribute_points(snake_in.T)
+        snake_in = remove_intersections(snake_in).T
         mask_in = polygon2mask(img.shape, snake_in)
         mask_in = mask & ~mask_in
         if len(img[mask_in]) > 0:
