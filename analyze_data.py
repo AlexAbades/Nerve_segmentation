@@ -18,6 +18,7 @@ def compute_average_radius_area (snakes):
     mean_area: np.array
         mean area for each circle
     """
+    radi_all_slices= np.zeros((len(snakes),snakes.shape[1]))
     for s in range(len(snakes)): 
         radi_circles=[]
         for c in range(snakes.shape[1]):
